@@ -1,0 +1,22 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".CreateEntryActivity" >
+
+  <EditText
+        android:id="@+id/entry_name_ET"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:hint="@string/entry_name_prompt" />
+        
+  <EditText
+        android:id="@+id/entry_loc_ET"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/entry_name_ET"
+        android:ems="10"
+        android:hint="@string/entry_loc_prompt" />
+
+</RelativeLayout>

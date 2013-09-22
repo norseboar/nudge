@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+    
+    <TextView
+        android:id="@+id/entry_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ems="32"
+        android:textIsSelectable="true"
+        />
+    
+    <ImageView 
+    	android:id="@+id/places_balloon"
+    	android:contentDescription="@string/balloon_desc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/entry_name"
+        android:src="@drawable/red_7_location_place"
+        />
+    
+	<TextView android:id="@+id/entry_loc"
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content"
+	    android:ems="20"
+	    android:textColor="#787878"
+	    android:textStyle="italic"
+	    android:textIsSelectable="true"
+	    android:layout_below="@id/entry_name"
+	    android:layout_toRightOf="@id/places_balloon"
+	    />
+	
+</RelativeLayout>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Nudge</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_create">Create entry</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="no_entries">You don\'t have any entries yet. Add one below!</string>
+    <string name="create_entry">Create an entry</string>
+    <string name="menu_settings">Settings</string>
+    <string name="title_activity_create_entry">CreateEntryActivity</string>
+	<string name="finish_entry">Create!</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="balloon_desc">Google Places balloon</string>
+    <string name="near_loc_title">Near a location</string>
+    
+    <string name="entry_name_prompt">What do you need to do?</string>
+	<string name="entry_loc_prompt">Where do you need to do it?</string>
+	<string name="entry_time_prompt">And when do you need to do it?</string>
+	<string name="refresh_places">Refresh places</string>
+	
+</resources>
