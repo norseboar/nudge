@@ -27,10 +27,7 @@ public class CreateEntryDialogFragment extends DialogFragment {
 				EditText nameET = (EditText) v.findViewById(R.id.entry_name_ET);
 				EditText locET = (EditText) v.findViewById(R.id.entry_loc_ET);
 				NudgeActivity na = (NudgeActivity)getActivity();
-				NudgeEntry newEntry = new NudgeEntry(na, nameET.getText().toString(), locET.getText().toString());
-
-				newEntry.checkLocationInfo(na.getLatEstimate(), na.getLonEstimate());
-				
+				NudgeEntry newEntry = new NudgeEntry(na, nameET.getText().toString(), locET.getText().toString());				
 				na.addEntry(newEntry);
 			}
 		});

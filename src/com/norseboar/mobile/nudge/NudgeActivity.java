@@ -10,12 +10,15 @@ import org.json.JSONArray;
 
 import com.norseboar.mobile.nudge.NudgeEntry.PushStatus;
 
+import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.DialogFragment;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -40,13 +43,14 @@ public class NudgeActivity extends Activity {
 	public static final int LOC_CHECK_PERMANENT_ID = 2;
 	public static final int PROXIMITY_NOTIFICATION_ID = 1000;
 	
-	public static final String PACKAGE_NAME = "com.norseboar.mobile.nudge";
+	public static final String PACKAGE_NAME = NudgeActivity.class.getPackage().getName();
 	public static final String START_LOC_CHECK = "start_loc_check";
 	public static final String APP_NAME = "Nudge";
 	public static final String LOCATION_ALERT_FILTER = PACKAGE_NAME + "LocationAlertIntent";
 	public static final String PLACES_INTENT_NUDGE_ENTRY = "NudgeEntry";
-	public static final String PLACES_UPDATED_INTENT = PACKAGE_NAME + "PLACES_UPDATED_INTENT";
-	public static final String CHECK_LOCATION_INTENT = PACKAGE_NAME + "CHECK_LOCATION_INTENT";
+	public static final String PLACES_UPDATED_INTENT = PACKAGE_NAME + "_PLACES_UPDATED_INTENT";
+	public static final String CHECK_LOCATION_INTENT = PACKAGE_NAME + "_CHECK_LOCATION_INTENT";
+	public static final String LOCATION_UPDATED_INTENT = PACKAGE_NAME + "_LOCATION_UPDATED_INTENT";
 	
 	private static final String LOG_TAG = "NudgeActivity";
 	private static final String CREATE_ENTRY_TAG = "create_entry";
@@ -54,6 +58,8 @@ public class NudgeActivity extends Activity {
 	private static final int NOTIFICATION_DISTANCE = 100;
 	private static final String PROXIMITY_NOTIFICATION_TITLE = "You can complete a task nearby!";
 	private static final String PROXIMITY_NOTIFICATION_TEXT_SUFFIX = " is nearby";
+	
+	private static final String LOCATION_CODE_KEY = "LocationCode";
 
 	// Terrible convention, revisit if this works
 	static int proximityNotifications = 0;
@@ -66,17 +72,27 @@ public class NudgeActivity extends Activity {
 		PLACES_ERROR
 	}
 	
+	// Location broadcast codes (so that the app can wait for a good location)
+	public enum LocationCode{
+		FIRST_LOCATION,
+		ORDINARY
+	}
+	
 	private ListView entryList;
 	private LinkedList<NudgeEntry> nudgeEntries;
 		
-	private double latEstimate;
-	private double lonEstimate;
-
-	private double lastCheckedLat;
-	private double lastCheckedLon;
-
+	// Default is higher than any possible lat/lon
+	private double latEstimate = 400.0;
+	private double lonEstimate = 400.0;
+	private double speedEstimate = 0.0;
+	
+	private double lastCheckedLat = 400.0;
+	private double lastCheckedLon = 400.0;
+	
 	private LocationManager locationManager;
-	private NudgeLocationListener listener;
+	String locationProvider = LocationManager.NETWORK_PROVIDER;
+	int locationTimeInterval = //15 * 60000;
+			20000;
 
 	// Used to facilitate distance function. Not used for long-term data.
 	private float[] distance = new float[3];
@@ -97,9 +113,27 @@ public class NudgeActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_nudge);
 		
+		// Start location services
+		locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+		if(!locationManager.isProviderEnabled(locationProvider)){
+			NudgeActivity.handleError(NudgeActivity.ErrorCode.LOCATION_PROVIDER_ERROR);
+		}
+		
+		IntentFilter filter = new IntentFilter();
+		filter.addAction(PLACES_UPDATED_INTENT);
+		filter.addAction(LOCATION_UPDATED_INTENT);
+		filter.addAction(CHECK_LOCATION_INTENT);
+		registerReceiver(mMessageReceiver, filter);
+		updateLocation(LocationCode.FIRST_LOCATION);
+	}
+    
+	/**
+	 * To be called after first location is loaded
+	 */
+	private void finishSetup(){
 		// Check if data for nudgeEntries exists
 		File file = getBaseContext().getFileStreamPath(LIST_PATH);
-
+	
 		nudgeEntries = new LinkedList<NudgeEntry>();
 		if(file.exists()){
 			try{
@@ -134,36 +168,56 @@ public class NudgeActivity extends Activity {
 	
 		touchListener =
 	            new SwipeDismissListViewTouchListener(entryList, adapter);
-
+	
 		entryList.setOnTouchListener(touchListener);
 	    // Setting this scroll listener is required to ensure that during ListView scrolling,
 	    // we don't look for swipes.
 	    entryList.setOnScrollListener(touchListener.makeScrollListener());
 		
 	     // TODO: Check that Google Places APK is available
-		
-		// Start location services
-	    String provider = LocationManager.NETWORK_PROVIDER;
-		locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-		if(!locationManager.isProviderEnabled(provider)){
-			NudgeActivity.handleError(NudgeActivity.ErrorCode.LOCATION_PROVIDER_ERROR);
-		}
-		
-		listener = new NudgeLocationListener(this);
-		updateLocation();
-		
-		Log.d(LOG_TAG, "About to start LocationCheckService");
-		Intent service = new Intent(this, LocationCheckService.class);
-		this.startService(service);
-		
-		IntentFilter filter = new IntentFilter();
-		filter.addAction(LocationCheckService.LOCATION_CHANGED_INTENT);
-		filter.addAction(PLACES_UPDATED_INTENT);
-		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, filter);
 	}
-     
-	private void updateLocation() {
+	
+	private void updateLocation(){
+		updateLocation(LocationCode.ORDINARY);
+	}
+	
+	/**
+	 * If the user's location has changed, update it and schedule another check for an appropriate time.
+	 * @param lc Location code to be send with the intent
+	 */
+	private void updateLocation(LocationCode lc) {
+		Log.d(LOG_TAG, "Location about to update");
+		// Ensure location providers are enabled
+		if(!locationManager.isProviderEnabled(locationProvider)){
+			NudgeActivity.handleError(NudgeActivity.ErrorCode.LOCATION_PROVIDER_ERROR);
+			return;
+		}
+
+		Intent i = new Intent(LOCATION_UPDATED_INTENT);
+		i.putExtra(LOCATION_CODE_KEY, lc);
+		PendingIntent pi = PendingIntent.getBroadcast(this, 0, i,
+				PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_CANCEL_CURRENT);
+		Criteria c = new Criteria();
+		c.setAccuracy(Criteria.ACCURACY_FINE);
+		c.setSpeedAccuracy(Criteria.ACCURACY_LOW);
+		c.setSpeedRequired(true);
+		Log.d(LOG_TAG, "requesting");
+
+		locationManager.requestSingleUpdate(locationProvider, pi);
+	}
+
+	/**
+	 * Schedule a location update
+	 */
+	private void scheduleLocationUpdate() {
+		Intent i = new Intent(CHECK_LOCATION_INTENT);
+		PendingIntent pi = PendingIntent.getBroadcast(this, 0, i,
+				PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_CANCEL_CURRENT);
+		AlarmManager am = (AlarmManager) (this.getSystemService(Context.ALARM_SERVICE));
+		am.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + locationTimeInterval, pi);
 		
+		Log.d(LOG_TAG, "Alarm set");
+		// TODO: destroy alarm manager
 	}
 
 	/**
@@ -172,27 +226,48 @@ public class NudgeActivity extends Activity {
 	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver(){
 		@Override
 		public void onReceive(Context c, Intent intent){
+			Log.d(LOG_TAG, "Received broadcast");
 			Toast toast = Toast.makeText(getApplicationContext(), "received broadcast", Toast.LENGTH_LONG);
 			toast.show();
 			
 			String action = intent.getAction();
-			if(action.equals(LocationCheckService.LOCATION_CHANGED_INTENT)){
-				// TODO: check lat and lon for errors
-				Log.d(LOG_TAG, "receiving location message");
-				latEstimate = intent.getDoubleExtra(LocationCheckService.LATITUDE, 0);
-				lonEstimate = intent.getDoubleExtra(LocationCheckService.LONGITUDE, 0);
+			if(action.equals(LOCATION_UPDATED_INTENT)){
+				Log.d(LOG_TAG, "Location updated intent received");
 				
-				Log.d(LOG_TAG, "location estimates are " + latEstimate + ", " + lonEstimate);
-				
-				// If location has changed substantially since the last places update, run a new places update
-				Location.distanceBetween(latEstimate, lonEstimate, lastCheckedLat, lastCheckedLon, distance);
-				if(distance[0] > PlacesRequest.PLACES_RADIUS/2){
-					updatePlaces();
+//				// TODO: check lat and lon for errors
+
+				if(intent.getExtras().containsKey(LocationManager.KEY_LOCATION_CHANGED)){
+					Location l = (Location) intent.getExtras().get(LocationManager.KEY_LOCATION_CHANGED);
+					latEstimate = l.getLatitude();
+					lonEstimate = l.getLongitude();
+					speedEstimate = l.getSpeed();
+					
+					Log.d(LOG_TAG, "location estimates are " + latEstimate + ", " + lonEstimate + ", speed is " +
+							speedEstimate);
+					
+					// If this is the first location, stop here
+					if(intent.getExtras().containsKey(LOCATION_CODE_KEY) &&
+							(LocationCode)intent.getExtras().get(LOCATION_CODE_KEY) == LocationCode.FIRST_LOCATION){
+								lastCheckedLat = latEstimate;
+								lastCheckedLon = lonEstimate;
+								finishSetup();
+								scheduleLocationUpdate();
+								return;
+					}
+					// If location has changed substantially since the last places update, run a new places update
+					Location.distanceBetween(latEstimate, lonEstimate, lastCheckedLat, lastCheckedLon, distance);
+					if(distance[0] > PlacesRequest.PLACES_RADIUS/2){
+						refreshPlaces();
+					}
+					else{
+						// CheckPlaces will be carried out after entries are updated if the former condition is true
+						checkPlaces();
+					}
 				}
 				else{
-					// CheckPlaces will be carried out after entries are updated if the former condition is true
-					checkPlaces();
+					handleError(ErrorCode.LOCATION_PROVIDER_ERROR);
 				}
+				scheduleLocationUpdate();
 			}
 			else if(action.equals(PLACES_UPDATED_INTENT)){
 				
@@ -211,10 +286,8 @@ public class NudgeActivity extends Activity {
 				checkPlaces();
 			}
 			else if(action.equals(CHECK_LOCATION_INTENT)){
-				// Ensure location providers are enabled
-				if(!locationManager.isProviderEnabled(provider)){
-					NudgeActivity.handleError(NudgeActivity.ErrorCode.NETWORK_LOCATION_ERROR);
-				}
+				Log.d(LOG_TAG, "Check location intent received");
+				updateLocation();
 			}
 		}
 	};
@@ -250,6 +323,8 @@ public class NudgeActivity extends Activity {
 	 * @param ne
 	 */
 	public void addEntry(NudgeEntry ne){
+		updateLocation();
+		ne.checkLocationInfo(getLatEstimate(), getLonEstimate());
 		nudgeEntries.add(ne);
 		refreshEntryList();
 	}
@@ -302,7 +377,7 @@ public class NudgeActivity extends Activity {
 	}
 	
 	public void checkPlaces(){
-		checkPlaces(false);
+		checkPlaces(true);
 	}
 	
 	/**
@@ -312,7 +387,7 @@ public class NudgeActivity extends Activity {
 	public void checkPlaces(boolean b){
 		if(!nudgeEntries.isEmpty()){
 			for(NudgeEntry ne : nudgeEntries){
-				if(ne.getList() == null || (!ne.isNotificationReady() && !b)){
+				if(ne.getList() == null || (!ne.isNotificationReady() && b)){
 					continue;
 				}
 				for(Place p : ne.getList().results){
@@ -336,22 +411,11 @@ public class NudgeActivity extends Activity {
 	
 	/**
 	 * Refreshes and checks all places, regardless of how recently they were checked before
-	 * @param v
 	 */
-	public void refreshPlaces(View v){
+	public void refreshPlaces(){
 		updatePlaces();
-		checkPlaces(true);
+		checkPlaces(false);
 	}
-	
-	/**
-	 * Refreshes data every time a checkbox is clicked
-	 * @param v
-	 */
-	public void onCheckboxClicked(View v){
-		refreshEntryList();
-	}
-	
-	
 	
 	/**
 	 * Sends a toast notification to the user when some error occurs. Notification is dependent upon error code.
@@ -417,6 +481,9 @@ public class NudgeActivity extends Activity {
 		saveList();
 	}
 	
+	/**
+	 * Save the entries list to a JSON file
+	 */
 	private void saveList(){
 		FileOutputStream fos;
 		try {
@@ -432,5 +499,11 @@ public class NudgeActivity extends Activity {
 			handleError(ErrorCode.FILE_SAVE);
 			e.printStackTrace();
 		}
+	}
+	
+	@Override
+	public void onDestroy(){
+		unregisterReceiver(mMessageReceiver);
+		super.onDestroy();
 	}
 }
