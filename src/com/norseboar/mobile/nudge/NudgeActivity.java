@@ -8,15 +8,12 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import org.json.JSONArray;
 
-import com.norseboar.mobile.nudge.NudgeEntry.PushStatus;
-
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.DialogFragment;
@@ -29,8 +26,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -53,14 +48,11 @@ public class NudgeActivity extends Activity {
 	public static final String LOCATION_UPDATED_INTENT = PACKAGE_NAME + "_LOCATION_UPDATED_INTENT";
 	public static final String FORCE_LOCATION_UPDATED_INTENT = PACKAGE_NAME + "FORCE_LOCATION_UPDATED_INTENT";
 	
-	private static final String LOG_TAG = "NudgeActivity";
 	private static final String CREATE_ENTRY_TAG = "create_entry";
 	private static final String LIST_PATH = "nudge_entries.json";
 	private static final int NOTIFICATION_DISTANCE = 100;
 	private static final String PROXIMITY_NOTIFICATION_TEXT_SUFFIX = " is nearby";
 	
-	private static final String LOCATION_CODE_KEY = "LocationCode";
-
 	// Terrible convention, revisit if this works
 	static int proximityNotifications = 0;
 	
@@ -105,6 +97,9 @@ public class NudgeActivity extends Activity {
 	public double getLonEstimate() {
 		return lonEstimate;
 	}
+	
+	// For the error handler
+	static Activity thisActivity;
 
 	SwipeDismissListViewTouchListener touchListener;
 		
@@ -112,6 +107,8 @@ public class NudgeActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_nudge);
+		
+		thisActivity = this;
 		
 		// Start location services
 		locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
@@ -132,7 +129,7 @@ public class NudgeActivity extends Activity {
 		nudgeEntries = new LinkedList<NudgeEntry>();
 		if(file.exists()){
 			try{
-				Log.d(LOG_TAG, "Reading file");
+				// Log.d(LOG_TAG, "Reading file");
 				FileInputStream fis = openFileInput(LIST_PATH);
 				StringBuffer fileContent = new StringBuffer("");
 				
@@ -183,7 +180,7 @@ public class NudgeActivity extends Activity {
 	 * @param lc Location code to be send with the intent
 	 */
 	private void updateLocation(boolean force) {
-		Log.d(LOG_TAG, "Location about to update");
+		// Log.d(LOG_TAG, "Location about to update");
 		// Ensure location providers are enabled
 		if(!locationManager.isProviderEnabled(locationProvider)){
 			NudgeActivity.handleError(NudgeActivity.ErrorCode.LOCATION_PROVIDER_ERROR);
@@ -203,7 +200,7 @@ public class NudgeActivity extends Activity {
 		c.setAccuracy(Criteria.ACCURACY_FINE);
 		c.setSpeedAccuracy(Criteria.ACCURACY_LOW);
 		c.setSpeedRequired(true);
-		Log.d(LOG_TAG, "requesting");
+		// Log.d(LOG_TAG, "requesting");
 
 		locationManager.requestSingleUpdate(c, pi);
 	}
@@ -218,7 +215,7 @@ public class NudgeActivity extends Activity {
 		AlarmManager am = (AlarmManager) (this.getSystemService(Context.ALARM_SERVICE));
 		am.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + locationTimeInterval, pi);
 		
-		Log.d(LOG_TAG, "Alarm set");
+		// Log.d(LOG_TAG, "Alarm set");
 		// TODO: destroy alarm manager
 	}
 
@@ -228,9 +225,7 @@ public class NudgeActivity extends Activity {
 	private BroadcastReceiver mMessageReceiver = new BroadcastReceiver(){
 		@Override
 		public void onReceive(Context c, Intent intent){
-			Log.d(LOG_TAG, "Received broadcast");
-			Toast toast = Toast.makeText(getApplicationContext(), "received broadcast", Toast.LENGTH_LONG);
-			toast.show();
+			// Log.d(LOG_TAG, "Received broadcast");
 			
 			String action = intent.getAction();
 			if(action.equals(LOCATION_UPDATED_INTENT)){
@@ -240,7 +235,7 @@ public class NudgeActivity extends Activity {
 				processLocationUpdate(intent, true);
 			}
 			else if(action.equals(PLACES_UPDATED_INTENT)){
-				Log.d(LOG_TAG, "received places updated intent");
+				// Log.d(LOG_TAG, "received places updated intent");
 				// Since google places returns locations out of range, prune those out
 				NudgeEntry ne = (NudgeEntry) intent.getSerializableExtra(PLACES_INTENT_NUDGE_ENTRY);
 				if(ne.getList() != null){
@@ -255,14 +250,14 @@ public class NudgeActivity extends Activity {
 				checkPlaces(ne);
 			}
 			else if(action.equals(CHECK_LOCATION_INTENT)){
-				Log.d(LOG_TAG, "Check location intent received");
+				// Log.d(LOG_TAG, "Check location intent received");
 				updateLocation();
 			}
 		}
 	};
 	
 	public void processLocationUpdate(Intent intent, boolean forceUpdate){
-		Log.d(LOG_TAG, "Location updated intent received");
+		// Log.d(LOG_TAG, "Location updated intent received");
 		
 //		// TODO: check lat and lon for errors
 
@@ -272,13 +267,13 @@ public class NudgeActivity extends Activity {
 			lonEstimate = l.getLongitude();
 			speedEstimate = l.getSpeed();
 			
-			Log.d(LOG_TAG, "location estimates are " + latEstimate + ", " + lonEstimate + ", speed is " +
-					speedEstimate);
+			// Log.d(LOG_TAG, "location estimates are " + latEstimate + ", " + lonEstimate + ", speed is " +
+			//		speedEstimate);
 			
 			// If location has changed substantially since the last places update, run a new places update
 			Location.distanceBetween(latEstimate, lonEstimate, lastCheckedLat, lastCheckedLon, distance);
 			if(forceUpdate || distance[0] > PlacesRequest.PLACES_RADIUS/2){
-				Log.d(LOG_TAG, "Updating places in location broadcast area");
+				// Log.d(LOG_TAG, "Updating places in location broadcast area");
 				updatePlaces();
 			}
 			else{
@@ -311,7 +306,7 @@ public class NudgeActivity extends Activity {
 	
 	/**
 	 * Creates and adds an entry to nudgeEntries, to be displayed in the main activity.
-	 * Launches a dialog to create the entry.
+	 * Launches a dia// Log to create the entry.
 	 */
 	private void createEntry(){
 		DialogFragment df = new CreateEntryDialogFragment();
@@ -323,7 +318,7 @@ public class NudgeActivity extends Activity {
 	 * @param ne
 	 */
 	public void addEntry(NudgeEntry ne){
-		Log.d(LOG_TAG, "Entry added");
+		// Log.d(LOG_TAG, "Entry added");
 		nudgeEntries.add(ne);
 		refreshEntryList();
 		updateLocation(true);
@@ -368,16 +363,12 @@ public class NudgeActivity extends Activity {
 	 * @param b Whether or not the recentness of the last check should affect anything
 	 */
 	public void checkPlaces(boolean b){
-		Log.d(LOG_TAG, "Checking places");
+		// Log.d(LOG_TAG, "Checking places");
 		if(!nudgeEntries.isEmpty()){
 			for(NudgeEntry ne : nudgeEntries){
 				checkPlaces(ne, b);
 			}
 			saveList();
-		}
-		else{
-			Toast toast = Toast.makeText(getApplicationContext(), "no coordinates to measure", Toast.LENGTH_LONG);
-			toast.show();
 		}
 	}
 	
@@ -386,23 +377,23 @@ public class NudgeActivity extends Activity {
 	}
 	
 	public void checkPlaces(NudgeEntry ne, boolean b){
-		Log.d(LOG_TAG, "Checking places for " + ne.getName());
+		// Log.d(LOG_TAG, "Checking places for " + ne.getName());
 		if(ne.getList() == null || (!ne.isNotificationReady() && b)){
 			return;
 		}
 		for(Place p : ne.getList().results){
-			Log.d(LOG_TAG, "Checking " + p.name);
+			// Log.d(LOG_TAG, "Checking " + p.name);
 			float[] distance = new float[3];
 			Location.distanceBetween(latEstimate, lonEstimate, p.geometry.location.lat, p.geometry.location.lng, distance);
 			if(distance[0] <= NOTIFICATION_DISTANCE){
 				// Send notification
-				Log.d(LOG_TAG, "Sending notification");
+				// Log.d(LOG_TAG, "Sending notification");
 				sendPlacesNotification(ne, p);
 				ne.setRecentlyNotified(true);
 				ne.setLastNotified(System.currentTimeMillis());
 			}
 			else{
-				Log.d(LOG_TAG, "No notification necessary");
+				// Log.d(LOG_TAG, "No notification necessary");
 			}
 		}
 	}
@@ -412,7 +403,7 @@ public class NudgeActivity extends Activity {
 	 */
 	private void updatePlaces(){
 		for(NudgeEntry ne : nudgeEntries){
-			Log.v(LOG_TAG, "About to check location info for " + ne.getName());
+			// Log.v(LOG_TAG, "About to check location info for " + ne.getName());
 			ne.checkLocationInfo(latEstimate, lonEstimate);
 			lastCheckedLat = latEstimate;
 			lastCheckedLon = lonEstimate;
@@ -436,10 +427,15 @@ public class NudgeActivity extends Activity {
 	 * @param errorCode
 	 */
 	public static void handleError(ErrorCode ec){
-		Log.e(LOG_TAG, ec.name());
+		String msg = "";
+		if(ec == ErrorCode.FILE_LOAD) msg = "Couldn't load list";
+		if(ec == ErrorCode.FILE_SAVE) msg = "Couldn't save list";
+		if(ec == ErrorCode.LOCATION_PROVIDER_ERROR) msg = "Cannot retrieve your location";
+		if(ec == ErrorCode.PLACES_ERROR) msg = "Cannot connect to Google Places";
+		Toast toast = Toast.makeText(thisActivity, "ERROR: " + msg, Toast.LENGTH_LONG);
+		toast.show();
 	}
 	
-	@SuppressLint({ "NewApi", "DefaultLocale" })
 	private void sendPlacesNotification(NudgeEntry ne, Place p){
 		NotificationCompat.Builder mBuilder =
 		        new NotificationCompat.Builder(this)
@@ -482,7 +478,7 @@ public class NudgeActivity extends Activity {
 	public void saveList(){
 		FileOutputStream fos;
 		try {
-			Log.d(LOG_TAG, "Writing file");
+			// Log.d(LOG_TAG, "Writing file");
 			fos = openFileOutput(LIST_PATH, Context.MODE_PRIVATE);
 			JSONArray ja = new JSONArray();
 			for(NudgeEntry ne : nudgeEntries){

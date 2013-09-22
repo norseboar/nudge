@@ -5,7 +5,6 @@ import java.io.Serializable;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.Context;
 import android.util.Log;
 
 public class NudgeEntry implements Serializable{
@@ -142,7 +141,7 @@ public class NudgeEntry implements Serializable{
 	 */
 	public void checkLocationInfo(double currentLat, double currentLon){
 		if(!loc.isEmpty()){
-			Log.d(DEBUG_TAG, "getting Places JSON");
+			// Log.d(DEBUG_TAG, "getting Places JSON");
 			new PlacesRequest(activity, this, currentLat, currentLon).execute((Void)null);
 		}
 	}

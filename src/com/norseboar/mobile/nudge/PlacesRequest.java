@@ -26,7 +26,7 @@ import android.util.Log;
  *
  */
 public class PlacesRequest extends AsyncTask<Void, Void, Void>{
-	private static final String API_KEY = "AIzaSyDsdoY4Ce_LoK_0dshLcvYZUwjlrw6mTsw";
+	private static final String API_KEY = "AIzaSyBz_lbxgOFgOXAX0mQJnmqQhX8Pi-RPy4Q";
 	private static final String PLACES_URL = "https://maps.googleapis.com/maps/api/place/textsearch/json?";
 	private static final String LOG_TAG = "PlacesRequest";
 	
@@ -68,13 +68,13 @@ public class PlacesRequest extends AsyncTask<Void, Void, Void>{
 			
 			Intent i = new Intent(NudgeActivity.PLACES_UPDATED_INTENT);
 			i.putExtra(NudgeActivity.PLACES_INTENT_NUDGE_ENTRY, entry);
-			Log.d(LOG_TAG, "About to sent broadcast from PlacesRequest to NudgeActivity");
+			// Log.d(LOG_TAG, "About to sent broadcast from PlacesRequest to NudgeActivity");
 			LocalBroadcastManager.getInstance(context).sendBroadcast(i);
 			
 			return null;
 		} catch (Exception e) {
 			if(!e.getMessage().isEmpty()){
-				Log.e(LOG_TAG, "PLACES REQUEST ERROR: " + e.getMessage());
+				// Log.e(LOG_TAG, "PLACES REQUEST ERROR: " + e.getMessage());
 			}
 			NudgeActivity.handleError(NudgeActivity.ErrorCode.PLACES_ERROR);
 		}
