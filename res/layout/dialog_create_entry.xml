@@ -18,5 +18,14 @@
         android:layout_below="@id/entry_name_ET"
         android:ems="10"
         android:hint="@string/entry_loc_prompt" />
-
+  <TextView 
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_below="@id/entry_loc_ET"
+      android:id="@+id/google_branding_TV"
+      android:paddingLeft="10sp"
+      android:paddingBottom="10sp"
+      android:textColor="#787878"
+      android:text="@string/google_branding"
+      android:textSize="14sp"/>
 </RelativeLayout>

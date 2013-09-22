@@ -19,5 +19,6 @@
 	<string name="entry_loc_prompt">Where do you need to do it?</string>
 	<string name="entry_time_prompt">And when do you need to do it?</string>
 	<string name="refresh_places">Refresh places</string>
+	<string name="google_branding"><i>Enhanced by </i><b>Google</b></string>
 	
 </resources>
