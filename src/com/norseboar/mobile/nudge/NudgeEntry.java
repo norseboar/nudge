@@ -25,7 +25,8 @@ public class NudgeEntry implements Serializable{
 	
 	public static final int RECENT_NOTIFICATION_TIME = 1000*60*10;
 			
-	private Context context;
+
+	private NudgeActivity activity;
 	private String name;
 	private String loc;
 	private boolean completed = false;
@@ -35,14 +36,14 @@ public class NudgeEntry implements Serializable{
 	private boolean recentlyNotified;
 
 	// Constructors
-	public NudgeEntry(Context context, String name){
-		this.context = context;
+	public NudgeEntry(NudgeActivity activity, String name){
+		this.activity = activity;
 		this.name = name;
 		this.loc = null;
 	}
 	
-	public NudgeEntry(Context context, String name, String loc){
-		this.context = context;
+	public NudgeEntry(NudgeActivity activity, String name, String loc){
+		this.activity = activity;
 		this.name = name;
 		this.loc = loc;
 	}
@@ -60,8 +61,8 @@ public class NudgeEntry implements Serializable{
 		return j;
 	}
 	
-	public static NudgeEntry deserializeFromJSON(JSONObject j, Context c) throws JSONException{
-		NudgeEntry ne = new NudgeEntry(c, j.getString("name"), j.getString("loc"));
+	public static NudgeEntry deserializeFromJSON(JSONObject j, NudgeActivity na) throws JSONException{
+		NudgeEntry ne = new NudgeEntry(na, j.getString("name"), j.getString("loc"));
 		ne.completed = j.getBoolean("completed");
 		ne.ps = PushStatus.valueOf(j.getString("ps"));
 		ne.lastNotified = j.getLong("lastNotified");
@@ -71,6 +72,10 @@ public class NudgeEntry implements Serializable{
 	}
 	
 	// Getters and setters
+	public NudgeActivity getActivity() {
+		return activity;
+	}
+	
 	public PushStatus getPs() {
 		return ps;
 	}
@@ -138,7 +143,7 @@ public class NudgeEntry implements Serializable{
 	public void checkLocationInfo(double currentLat, double currentLon){
 		if(!loc.isEmpty()){
 			Log.d(DEBUG_TAG, "getting Places JSON");
-			new PlacesRequest(context, this, currentLat, currentLon).execute((Void)null);
+			new PlacesRequest(activity, this, currentLat, currentLon).execute((Void)null);
 		}
 	}
 }

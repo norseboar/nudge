@@ -62,4 +62,11 @@ public class NudgeEntryAdapter extends ArrayAdapter<NudgeEntry> {
 		return row;
 		
 	}
+	
+	@Override
+	public void remove(NudgeEntry ne){
+		ne.setCompleted(true);
+		ne.getActivity().saveList();
+		super.remove(ne);
+	}
 }

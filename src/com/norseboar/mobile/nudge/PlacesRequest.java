@@ -68,12 +68,13 @@ public class PlacesRequest extends AsyncTask<Void, Void, Void>{
 			
 			Intent i = new Intent(NudgeActivity.PLACES_UPDATED_INTENT);
 			i.putExtra(NudgeActivity.PLACES_INTENT_NUDGE_ENTRY, entry);
+			Log.d(LOG_TAG, "About to sent broadcast from PlacesRequest to NudgeActivity");
 			LocalBroadcastManager.getInstance(context).sendBroadcast(i);
 			
 			return null;
 		} catch (Exception e) {
 			if(!e.getMessage().isEmpty()){
-				Log.e(LOG_TAG, e.getMessage());
+				Log.e(LOG_TAG, "PLACES REQUEST ERROR: " + e.getMessage());
 			}
 			NudgeActivity.handleError(NudgeActivity.ErrorCode.PLACES_ERROR);
 		}

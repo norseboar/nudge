@@ -9,6 +9,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:ems="32"
+        android:textSize="20sp"
+        android:padding="10sp"
         android:textIsSelectable="true"
         />
     
@@ -18,13 +20,16 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/entry_name"
+        android:paddingTop="10sp"
         android:src="@drawable/red_7_location_place"
         />
     
 	<TextView android:id="@+id/entry_loc"
 	    android:layout_width="fill_parent"
 	    android:layout_height="wrap_content"
+	    android:textSize="18sp"
 	    android:ems="20"
+	    android:paddingTop="10sp"
 	    android:textColor="#787878"
 	    android:textStyle="italic"
 	    android:textIsSelectable="true"
