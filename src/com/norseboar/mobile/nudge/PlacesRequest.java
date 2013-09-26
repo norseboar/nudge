@@ -12,6 +12,7 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonObjectParser;
 import com.google.api.client.json.jackson2.JacksonFactory;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -25,15 +26,16 @@ import android.util.Log;
  * @author Reed
  *
  */
+@SuppressLint("NewApi")
 public class PlacesRequest extends AsyncTask<Void, Void, Void>{
-	private static final String API_KEY = "AIzaSyBz_lbxgOFgOXAX0mQJnmqQhX8Pi-RPy4Q";
+	private String API_KEY = "";
 	private static final String PLACES_URL = "https://maps.googleapis.com/maps/api/place/textsearch/json?";
 	private static final String LOG_TAG = "PlacesRequest";
 	
 	// Global instance of HTTP Transport
 	private static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
 	
-	public static final int PLACES_RADIUS = 1000;
+	public static final int PLACES_RADIUS = 500;
 	public static final boolean USES_SENSOR = true;
 	
 	private Context context;
@@ -45,6 +47,7 @@ public class PlacesRequest extends AsyncTask<Void, Void, Void>{
 	// Constructor allows PlacesRequest to take in multiple types as parameters
 	public PlacesRequest(Context c, NudgeEntry entry, double lat, double lon){
 		context = c;
+		API_KEY = "AIzaSyCSqYN3ZU-wqrh3zSOmrQ_JV1056CqQmp0";
 		this.entry = entry;
 		this.lat = lat;
 		this.lon = lon;
@@ -55,11 +58,11 @@ public class PlacesRequest extends AsyncTask<Void, Void, Void>{
 		try {
 			HttpRequestFactory factory = createRequestFactory(HTTP_TRANSPORT);
 			GenericUrl url = new GenericUrl(PLACES_URL);
-			url.put("key", API_KEY);
 			url.put("query", entry.getLoc());
+			url.put("key", API_KEY);
+			url.put("sensor", USES_SENSOR);
 			url.put("location", lat + "," + lon);
 			url.put("radius", PLACES_RADIUS);
-			url.put("sensor", USES_SENSOR);
 			HttpRequest request = factory.buildGetRequest(url);
 
 			HttpResponse r = request.execute();
@@ -73,9 +76,6 @@ public class PlacesRequest extends AsyncTask<Void, Void, Void>{
 			
 			return null;
 		} catch (Exception e) {
-			if(!e.getMessage().isEmpty()){
-				// Log.e(LOG_TAG, "PLACES REQUEST ERROR: " + e.getMessage());
-			}
 			NudgeActivity.handleError(NudgeActivity.ErrorCode.PLACES_ERROR);
 		}
 		return null; 
