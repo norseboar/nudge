@@ -30,7 +30,7 @@ import android.util.Log;
 public class PlacesRequest extends AsyncTask<Void, Void, Void>{
 	private String API_KEY = "";
 	private static final String PLACES_URL = "https://maps.googleapis.com/maps/api/place/textsearch/json?";
-	private static final String LOG_TAG = "PlacesRequest";
+	private static final String LOG_TAG = NudgeActivity.LOG_TAG;
 	
 	// Global instance of HTTP Transport
 	private static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
@@ -46,16 +46,19 @@ public class PlacesRequest extends AsyncTask<Void, Void, Void>{
 
 	// Constructor allows PlacesRequest to take in multiple types as parameters
 	public PlacesRequest(Context c, NudgeEntry entry, double lat, double lon){
+		Log.i(NudgeActivity.LOG_TAG, "Creating PlacesRequest for NudgeEntry " + entry.getName());
 		context = c;
 		API_KEY = "AIzaSyCSqYN3ZU-wqrh3zSOmrQ_JV1056CqQmp0";
 		this.entry = entry;
 		this.lat = lat;
 		this.lon = lon;
+		Log.i(NudgeActivity.LOG_TAG, "PlacesRequest constructor complete");
 	}
 	
 	@Override
 	protected Void doInBackground(Void... params) {
 		try {
+			Log.i(NudgeActivity.LOG_TAG, "About to create HttpRequestFactory");
 			HttpRequestFactory factory = createRequestFactory(HTTP_TRANSPORT);
 			GenericUrl url = new GenericUrl(PLACES_URL);
 			url.put("query", entry.getLoc());
@@ -63,19 +66,28 @@ public class PlacesRequest extends AsyncTask<Void, Void, Void>{
 			url.put("sensor", USES_SENSOR);
 			url.put("location", lat + "," + lon);
 			url.put("radius", PLACES_RADIUS);
+			
+			Log.i(LOG_TAG, "About to buildGetRequest");
 			HttpRequest request = factory.buildGetRequest(url);
 
+			Log.i(LOG_TAG, "About to execute request");
 			HttpResponse r = request.execute();
+			Log.i(LOG_TAG, "About to parse placesList");
 			PlacesList list = r.parseAs(PlacesList.class);
+			Log.i(LOG_TAG, "About to set entry list");
 			entry.setList(list);
 			
+			Log.i(LOG_TAG, "About to create new intent");
 			Intent i = new Intent(NudgeActivity.PLACES_UPDATED_INTENT);
+			Log.i(LOG_TAG, "About to put extra in entry");
 			i.putExtra(NudgeActivity.PLACES_INTENT_NUDGE_ENTRY, entry);
-			// Log.d(LOG_TAG, "About to sent broadcast from PlacesRequest to NudgeActivity");
+			Log.i(LOG_TAG, "About to send broadcast from PlacesRequest to NudgeActivity");
 			LocalBroadcastManager.getInstance(context).sendBroadcast(i);
 			
 			return null;
 		} catch (Exception e) {
+			Log.i(LOG_TAG, "Exception: " + e.getMessage());
+			Log.i(LOG_TAG, "Trace: " + e.getStackTrace());
 			NudgeActivity.handleError(NudgeActivity.ErrorCode.PLACES_ERROR);
 		}
 		return null; 

@@ -20,7 +20,6 @@ public class NudgeEntry implements Serializable{
 	}
 	
 	private static final long serialVersionUID = -725343665455726640L;
-	private static final String DEBUG_TAG = "NudgeEntry";
 	
 	public static final int RECENT_NOTIFICATION_TIME = 1000*60*10;
 			
@@ -140,9 +139,10 @@ public class NudgeEntry implements Serializable{
 	 * @param currentLon
 	 */
 	public void checkLocationInfo(double currentLat, double currentLon){
+		Log.i(NudgeActivity.LOG_TAG, "Entering checkLocationInfo for NudgeEntry " + this.getName());
 		if(!loc.isEmpty()){
-			// Log.d(DEBUG_TAG, "getting Places JSON");
 			new PlacesRequest(activity, this, currentLat, currentLon).execute((Void)null);
 		}
+		Log.i(NudgeActivity.LOG_TAG, "Exiting checkLocationInfo for NudgeEntry " + this.getName());
 	}
 }

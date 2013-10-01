@@ -26,6 +26,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -53,6 +54,7 @@ public class NudgeActivity extends Activity {
 	private static final int NOTIFICATION_DISTANCE = 100;
 	private static final String PROXIMITY_NOTIFICATION_TEXT_SUFFIX = " is nearby";
 	
+	public static final String LOG_TAG = "NudgeActivity";
 	// Terrible convention, revisit if this works
 	static int proximityNotifications = 0;
 	
@@ -363,13 +365,14 @@ public class NudgeActivity extends Activity {
 	 * @param b Whether or not the recentness of the last check should affect anything
 	 */
 	public void checkPlaces(boolean b){
-		// Log.d(LOG_TAG, "Checking places");
+		Log.i(LOG_TAG, "Entering checkPlaces");
 		if(!nudgeEntries.isEmpty()){
 			for(NudgeEntry ne : nudgeEntries){
 				checkPlaces(ne, b);
 			}
 			saveList();
 		}
+		Log.i(LOG_TAG, "Exiting checkPlaces");
 	}
 	
 	public void checkPlaces(NudgeEntry ne){
@@ -377,7 +380,7 @@ public class NudgeActivity extends Activity {
 	}
 	
 	public void checkPlaces(NudgeEntry ne, boolean b){
-		// Log.d(LOG_TAG, "Checking places for " + ne.getName());
+		Log.i(LOG_TAG, "Entering checkPlaces for NudgeEntry " + ne.getName());
 		if(ne.getList() == null || (!ne.isNotificationReady() && b)){
 			return;
 		}
@@ -387,23 +390,24 @@ public class NudgeActivity extends Activity {
 			Location.distanceBetween(latEstimate, lonEstimate, p.geometry.location.lat, p.geometry.location.lng, distance);
 			if(distance[0] <= NOTIFICATION_DISTANCE){
 				// Send notification
-				// Log.d(LOG_TAG, "Sending notification");
+				Log.i(LOG_TAG, "Sending notification");
 				sendPlacesNotification(ne, p);
 				ne.setRecentlyNotified(true);
 				ne.setLastNotified(System.currentTimeMillis());
 			}
 			else{
-				// Log.d(LOG_TAG, "No notification necessary");
+				Log.i(LOG_TAG, "No notification necessary");
 			}
 		}
+		Log.i(LOG_TAG, "Exiting checkPlaces for NudgeEntry " + ne.getName());
 	}
 
 	/**
 	 * Updates the places of all entries
 	 */
 	private void updatePlaces(){
+		Log.i(LOG_TAG, "Entering updatePlaces");
 		for(NudgeEntry ne : nudgeEntries){
-			// Log.v(LOG_TAG, "About to check location info for " + ne.getName());
 			ne.checkLocationInfo(latEstimate, lonEstimate);
 			lastCheckedLat = latEstimate;
 			lastCheckedLon = lonEstimate;
@@ -416,6 +420,8 @@ public class NudgeActivity extends Activity {
 		}
 		
 		saveList();
+		
+		Log.i(LOG_TAG, "Exiting updatePlaces");
 	}
 	
 	public void updatePlacesButton(View v){
