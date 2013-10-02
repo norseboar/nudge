@@ -365,14 +365,14 @@ public class NudgeActivity extends Activity {
 	 * @param b Whether or not the recentness of the last check should affect anything
 	 */
 	public void checkPlaces(boolean b){
-		Log.i(LOG_TAG, "Entering checkPlaces");
+		Log.w(LOG_TAG, "Entering checkPlaces");
 		if(!nudgeEntries.isEmpty()){
 			for(NudgeEntry ne : nudgeEntries){
 				checkPlaces(ne, b);
 			}
 			saveList();
 		}
-		Log.i(LOG_TAG, "Exiting checkPlaces");
+		Log.w(LOG_TAG, "Exiting checkPlaces");
 	}
 	
 	public void checkPlaces(NudgeEntry ne){
@@ -380,7 +380,7 @@ public class NudgeActivity extends Activity {
 	}
 	
 	public void checkPlaces(NudgeEntry ne, boolean b){
-		Log.i(LOG_TAG, "Entering checkPlaces for NudgeEntry " + ne.getName());
+		Log.w(LOG_TAG, "Entering checkPlaces for NudgeEntry " + ne.getName());
 		if(ne.getList() == null || (!ne.isNotificationReady() && b)){
 			return;
 		}
@@ -390,23 +390,23 @@ public class NudgeActivity extends Activity {
 			Location.distanceBetween(latEstimate, lonEstimate, p.geometry.location.lat, p.geometry.location.lng, distance);
 			if(distance[0] <= NOTIFICATION_DISTANCE){
 				// Send notification
-				Log.i(LOG_TAG, "Sending notification");
+				Log.w(LOG_TAG, "Sending notification");
 				sendPlacesNotification(ne, p);
 				ne.setRecentlyNotified(true);
 				ne.setLastNotified(System.currentTimeMillis());
 			}
 			else{
-				Log.i(LOG_TAG, "No notification necessary");
+				Log.w(LOG_TAG, "No notification necessary");
 			}
 		}
-		Log.i(LOG_TAG, "Exiting checkPlaces for NudgeEntry " + ne.getName());
+		Log.w(LOG_TAG, "Exiting checkPlaces for NudgeEntry " + ne.getName());
 	}
 
 	/**
 	 * Updates the places of all entries
 	 */
 	private void updatePlaces(){
-		Log.i(LOG_TAG, "Entering updatePlaces");
+		Log.w(LOG_TAG, "Entering updatePlaces");
 		for(NudgeEntry ne : nudgeEntries){
 			ne.checkLocationInfo(latEstimate, lonEstimate);
 			lastCheckedLat = latEstimate;
@@ -421,7 +421,7 @@ public class NudgeActivity extends Activity {
 		
 		saveList();
 		
-		Log.i(LOG_TAG, "Exiting updatePlaces");
+		Log.w(LOG_TAG, "Exiting updatePlaces");
 	}
 	
 	public void updatePlacesButton(View v){
