@@ -1,5 +1,7 @@
 package com.norseboar.mobile.nudge;
 
+import SwipeDismissListViewTouchListener;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -29,6 +31,7 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -155,12 +158,38 @@ public class NudgeActivity extends Activity {
 		updateLocation(true);
 
 		entryList = (ListView) findViewById(R.id.entry_list);
-		NudgeEntryAdapter adapter = new NudgeEntryAdapter(this, nudgeEntries);
+		final NudgeEntryAdapter adapter = new NudgeEntryAdapter(this, nudgeEntries);
 		entryList.setAdapter(adapter);
 		
 		// Display list information
 		refreshEntryList();
-	
+		
+		final SwipeDismissListViewTouchListener swipeDismissTouchListener =
+                new SwipeDismissListViewTouchListener(
+                        entryList,
+                        new SwipeDismissListViewTouchListener.DismissCallbacks() {
+                            public boolean canDismiss(int position) {
+                                return position < adapter.getCount() - 1;
+                            }
+
+                            public void onDismiss(ListView listView, int[] reverseSortedPositions) {
+                                for (int position : reverseSortedPositions) {
+                                	removeEntry(nudgeEntries.get(position), false);
+                                }
+                                refreshEntryList();
+                            }
+                        });
+        entryList.setOnItemClickListener(this);
+        entryList.setOnScrollListener(swipeDismissTouchListener.makeScrollListener());
+        entryList.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                return dragSortController.onTouch(view, motionEvent)
+                        || (!dragSortController.isDragging()
+                        && swipeDismissTouchListener.onTouch(view, motionEvent));
+
+            }
+        });
 		touchListener =
 	            new SwipeDismissListViewTouchListener(entryList, adapter);
 	
@@ -179,7 +208,7 @@ public class NudgeActivity extends Activity {
 	
 	/**
 	 * If the user's location has changed, update it and schedule another check for an appropriate time.
-	 * @param lc Location code to be send with the intent
+	 * @param force boolean determining whether a location update should be forced
 	 */
 	private void updateLocation(boolean force) {
 		// Log.d(LOG_TAG, "Location about to update");
@@ -320,10 +349,26 @@ public class NudgeActivity extends Activity {
 	 * @param ne
 	 */
 	public void addEntry(NudgeEntry ne){
-		// Log.d(LOG_TAG, "Entry added");
+		Log.v(LOG_TAG, "Entering addEntry");
 		nudgeEntries.add(ne);
 		refreshEntryList();
 		updateLocation(true);
+		Log.v(LOG_TAG, "Exiting addEntry");
+	}
+	
+	/**
+	 * Removes a NudgeEntry from the list of active activities that is displayed my Nudge.
+	 * @param ne
+	 * @param refreshList Whether or not to refresh the list (if removing many, maybe not until the end)
+	 */
+	public void removeEntry(NudgeEntry ne, boolean refreshList){
+		Log.v(LOG_TAG, "Entering removeEntry");
+		ne.setCompleted(true);
+		nudgeEntries.remove(ne);
+		if(refreshList){
+			refreshEntryList();
+		}
+		Log.v(LOG_TAG, "Exiting removeEntry");
 	}
 
 	/**
