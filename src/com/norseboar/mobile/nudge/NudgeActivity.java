@@ -1,7 +1,5 @@
 package com.norseboar.mobile.nudge;
 
-import SwipeDismissListViewTouchListener;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;

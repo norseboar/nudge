@@ -1,3 +1,5 @@
+package de.timroes.android.listview;
+
 import android.content.Context;
 import android.graphics.Rect;
 import android.os.Build;
@@ -30,8 +32,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
-package com.norseboar.mobile.nudge;
 
 /**
  * A {@link android.widget.ListView} offering enhanced features like Swipe To Dismiss and an
