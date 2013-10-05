@@ -157,10 +157,6 @@ public class NudgeActivity extends Activity {
 		entryListView = (EnhancedListView) findViewById(R.id.entry_list_view);
 		final NudgeEntryAdapter adapter = new NudgeEntryAdapter(this, activeNudgeEntries);
 		entryListView.setAdapter(adapter);
-		entryListView.enableSwipeToDismiss();
-		
-		// Display list information
-		refreshentryListView();
 		
 		// Set the callback that handles dismisses.
 	    entryListView.setDismissCallback(new EnhancedListView.OnDismissCallback() {
@@ -186,6 +182,11 @@ public class NudgeActivity extends Activity {
 	            };
 	        }
 	    });
+		
+		entryListView.enableSwipeToDismiss();
+		
+		// Display list information
+		refreshentryListView();
 		
 	     // TODO: Check that Google Places APK is available
 	}
