@@ -73,9 +73,10 @@ public class NudgeActivity extends Activity {
 		UPDATE_PLACES
 	}
 	
-	private ListView entryList;
-	private LinkedList<NudgeEntry> nudgeEntries;
-		
+	private EnhancedListView entryListView;
+	private LinkedList<NudgeEntry> activeNudgeEntries;
+	private LinkedList<NudgeEntry> completedNudgeEntries;
+	
 	// Default is higher than any possible lat/lon
 	private double latEstimate = 400.0;
 	private double lonEstimate = 400.0;
@@ -103,8 +104,6 @@ public class NudgeActivity extends Activity {
 	
 	// For the error handler
 	static Activity thisActivity;
-
-	SwipeDismissListViewTouchListener touchListener;
 		
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -129,7 +128,7 @@ public class NudgeActivity extends Activity {
 		// Check if data for nudgeEntries exists
 		File file = getBaseContext().getFileStreamPath(LIST_PATH);
 	
-		nudgeEntries = new LinkedList<NudgeEntry>();
+		activeNudgeEntries = new LinkedList<NudgeEntry>();
 		if(file.exists()){
 			try{
 				// Log.d(LOG_TAG, "Reading file");
@@ -144,7 +143,7 @@ public class NudgeActivity extends Activity {
 				JSONArray ja = new JSONArray(fileContent.toString());
 				for(int i = 0; i < ja.length(); i++){
 					NudgeEntry ne = NudgeEntry.deserializeFromJSON(ja.getJSONObject(i), this);
-					nudgeEntries.add(ne);	
+					activeNudgeEntries.add(ne);	
 				}
 				
 				fis.close();
@@ -155,51 +154,42 @@ public class NudgeActivity extends Activity {
 		
 		updateLocation(true);
 
-		entryList = (ListView) findViewById(R.id.entry_list);
-		final NudgeEntryAdapter adapter = new NudgeEntryAdapter(this, nudgeEntries);
-		entryList.setAdapter(adapter);
+		entryListView = (EnhancedListView) findViewById(R.id.entry_list_view);
+		final NudgeEntryAdapter adapter = new NudgeEntryAdapter(this, activeNudgeEntries);
+		entryListView.setAdapter(adapter);
+		entryListView.enableSwipeToDismiss();
 		
 		// Display list information
-		refreshEntryList();
+		refreshentryListView();
 		
-		final SwipeDismissListViewTouchListener swipeDismissTouchListener =
-                new SwipeDismissListViewTouchListener(
-                        entryList,
-                        new SwipeDismissListViewTouchListener.DismissCallbacks() {
-                            public boolean canDismiss(int position) {
-                                return position < adapter.getCount() - 1;
-                            }
+		// Set the callback that handles dismisses.
+	    entryListView.setDismissCallback(new EnhancedListView.OnDismissCallback() {
+	        /**
+	         * This method will be called when the user swiped a way or deleted it via
+	         * {@link de.timroes.android.listview.EnhancedListView#delete(int)}.
+	         *
+	         * @param listView The {@link EnhancedListView} the item has been deleted from.
+	         * @param position The position of the item to delete from your adapter.
+	         * @return An {@link de.timroes.android.listview.EnhancedListView.Undoable}, if you want
+	         *      to give the user the possibility to undo the deletion.
+	         */
+	        @Override
+	        public EnhancedListView.Undoable onDismiss(EnhancedListView listView, final int position) {
 
-                            public void onDismiss(ListView listView, int[] reverseSortedPositions) {
-                                for (int position : reverseSortedPositions) {
-                                	removeEntry(nudgeEntries.get(position), false);
-                                }
-                                refreshEntryList();
-                            }
-                        });
-        entryList.setOnItemClickListener(this);
-        entryList.setOnScrollListener(swipeDismissTouchListener.makeScrollListener());
-        entryList.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent motionEvent) {
-                return dragSortController.onTouch(view, motionEvent)
-                        || (!dragSortController.isDragging()
-                        && swipeDismissTouchListener.onTouch(view, motionEvent));
-
-            }
-        });
-		touchListener =
-	            new SwipeDismissListViewTouchListener(entryList, adapter);
-	
-		entryList.setOnTouchListener(touchListener);
-	    // Setting this scroll listener is required to ensure that during ListView scrolling,
-	    // we don't look for swipes.
-	    entryList.setOnScrollListener(touchListener.makeScrollListener());
+	            final NudgeEntry item = (NudgeEntry) adapter.getItem(position);
+	            adapter.remove(item);
+	            return new EnhancedListView.Undoable() {
+	                @Override
+	                public void undo() {
+	                    adapter.insert(item, position);
+	                }
+	            };
+	        }
+	    });
 		
 	     // TODO: Check that Google Places APK is available
 	}
-
-	
+    
 	private void updateLocation(){
 		updateLocation(false);
 	}
@@ -348,24 +338,20 @@ public class NudgeActivity extends Activity {
 	 */
 	public void addEntry(NudgeEntry ne){
 		Log.v(LOG_TAG, "Entering addEntry");
-		nudgeEntries.add(ne);
-		refreshEntryList();
+		activeNudgeEntries.add(ne);
+		refreshentryListView();
 		updateLocation(true);
 		Log.v(LOG_TAG, "Exiting addEntry");
 	}
 	
 	/**
-	 * Removes a NudgeEntry from the list of active activities that is displayed my Nudge.
+	 * Removes a NudgeEntry from the internal list of activities. NOTE: This does not effect the display
 	 * @param ne
-	 * @param refreshList Whether or not to refresh the list (if removing many, maybe not until the end)
 	 */
-	public void removeEntry(NudgeEntry ne, boolean refreshList){
+	public void removeEntry(NudgeEntry ne){
 		Log.v(LOG_TAG, "Entering removeEntry");
-		ne.setCompleted(true);
-		nudgeEntries.remove(ne);
-		if(refreshList){
-			refreshEntryList();
-		}
+		activeNudgeEntries.remove(ne);
+		completedNudgeEntries.add(ne);
 		Log.v(LOG_TAG, "Exiting removeEntry");
 	}
 
@@ -374,14 +360,14 @@ public class NudgeActivity extends Activity {
 	 * This method is terribly inefficient for large lists. This method is called frequently, and presumes there are a small number of elements (perhaps 100)
 	 * that can be managed quickly.
 	 */
-	public void refreshEntryList(){
+	public void refreshentryListView(){
 		// If nudgeEntries isn't empty, hide the hint message		
-		if(nudgeEntries.size() > 0){
+		if(activeNudgeEntries.size() > 0){
 			findViewById(R.id.empty_notice).setVisibility(View.GONE);
 		}
 		
 		// Check if any entries must be pushed and push them accordingly
-		Iterator<NudgeEntry> iter = nudgeEntries.iterator();
+		Iterator<NudgeEntry> iter = activeNudgeEntries.iterator();
 		NudgeEntry ne;
 		
 		// Remove all NudgeEntries which must be pushed somewhere
@@ -393,7 +379,7 @@ public class NudgeActivity extends Activity {
 		}
 		
 		// After list has been re-ordered, reload adapter it
-		NudgeEntryAdapter nea = (NudgeEntryAdapter) entryList.getAdapter();
+		NudgeEntryAdapter nea = (NudgeEntryAdapter) entryListView.getAdapter();
 		nea.notifyDataSetChanged();
 		
 		saveList();
@@ -409,8 +395,8 @@ public class NudgeActivity extends Activity {
 	 */
 	public void checkPlaces(boolean b){
 		Log.w(LOG_TAG, "Entering checkPlaces");
-		if(!nudgeEntries.isEmpty()){
-			for(NudgeEntry ne : nudgeEntries){
+		if(!activeNudgeEntries.isEmpty()){
+			for(NudgeEntry ne : activeNudgeEntries){
 				checkPlaces(ne, b);
 			}
 			saveList();
@@ -450,7 +436,7 @@ public class NudgeActivity extends Activity {
 	 */
 	private void updatePlaces(){
 		Log.w(LOG_TAG, "Entering updatePlaces");
-		for(NudgeEntry ne : nudgeEntries){
+		for(NudgeEntry ne : activeNudgeEntries){
 			ne.checkLocationInfo(latEstimate, lonEstimate);
 			lastCheckedLat = latEstimate;
 			lastCheckedLon = lonEstimate;
@@ -530,7 +516,7 @@ public class NudgeActivity extends Activity {
 			// Log.d(LOG_TAG, "Writing file");
 			fos = openFileOutput(LIST_PATH, Context.MODE_PRIVATE);
 			JSONArray ja = new JSONArray();
-			for(NudgeEntry ne : nudgeEntries){
+			for(NudgeEntry ne : activeNudgeEntries){
 				ja.put(ne.serializeToJSON());
 			}
 			fos.write(ja.toString().getBytes());
