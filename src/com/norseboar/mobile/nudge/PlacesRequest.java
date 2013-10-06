@@ -30,7 +30,13 @@ import android.util.Log;
 @SuppressLint("NewApi")
 public class PlacesRequest extends AsyncTask<Void, Void, Void>{
 	private String API_KEY = "";
-	private static final String PLACES_URL = "https://maps.googleapis.com/maps/api/place/textsearch/json?";
+	
+	// Only held here so Google Places URL can be switched to in the future
+	@SuppressWarnings("unused")
+	private static final String GOOGLE_PLACES_URL = "https://maps.googleapis.com/maps/api/place/textsearch/json?";
+	
+	private static final String YELP_PLACES_URL = "http://api.yelp.com/v2/search";
+	private static final String PLACES_URL = YELP_PLACES_URL;
 	private static final String LOG_TAG = NudgeActivity.LOG_TAG;
 	
 	// Global instance of HTTP Transport
@@ -49,7 +55,6 @@ public class PlacesRequest extends AsyncTask<Void, Void, Void>{
 	public PlacesRequest(Context c, NudgeEntry entry, double lat, double lon){
 		Log.w(NudgeActivity.LOG_TAG, "Creating PlacesRequest for NudgeEntry " + entry.getName());
 		context = c;
-		API_KEY = "AIzaSyCSqYN3ZU-wqrh3zSOmrQ_JV1056CqQmp0";
 		this.entry = entry;
 		this.lat = lat;
 		this.lon = lon;
