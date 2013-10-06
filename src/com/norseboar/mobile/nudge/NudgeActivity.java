@@ -1,7 +1,5 @@
 package com.norseboar.mobile.nudge;
 
-import SwipeDismissListViewTouchListener;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -106,7 +104,6 @@ public class NudgeActivity extends Activity {
 	// For the error handler
 	static Activity thisActivity;
 
-	SwipeDismissListViewTouchListener touchListener;
 		
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -163,40 +160,6 @@ public class NudgeActivity extends Activity {
 		
 		// Display list information
 		refreshEntryList();
-		
-		final SwipeDismissListViewTouchListener swipeDismissTouchListener =
-                new SwipeDismissListViewTouchListener(
-                        entryList,
-                        new SwipeDismissListViewTouchListener.DismissCallbacks() {
-                            public boolean canDismiss(int position) {
-                                return position < adapter.getCount() - 1;
-                            }
-
-                            public void onDismiss(ListView listView, int[] reverseSortedPositions) {
-                                for (int position : reverseSortedPositions) {
-                                	removeEntry(nudgeEntries.get(position), false);
-                                }
-                                refreshEntryList();
-                            }
-                        });
-        entryList.setOnItemClickListener(this);
-        entryList.setOnScrollListener(swipeDismissTouchListener.makeScrollListener());
-        entryList.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent motionEvent) {
-                return dragSortController.onTouch(view, motionEvent)
-                        || (!dragSortController.isDragging()
-                        && swipeDismissTouchListener.onTouch(view, motionEvent));
-
-            }
-        });
-		touchListener =
-	            new SwipeDismissListViewTouchListener(entryList, adapter);
-	
-		entryList.setOnTouchListener(touchListener);
-	    // Setting this scroll listener is required to ensure that during ListView scrolling,
-	    // we don't look for swipes.
-	    entryList.setOnScrollListener(touchListener.makeScrollListener());
 		
 	     // TODO: Check that Google Places APK is available
 	}

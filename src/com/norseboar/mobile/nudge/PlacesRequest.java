@@ -19,6 +19,7 @@ import android.os.AsyncTask;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+
 // http handling code credited to http://yuvislm.wordpress.com/2012/09/10/google-places-api-and-json-parsing-in-android/
 // http handling code now credited to http://www.androidhive.info/2012/08/android-working-with-google-places-and-maps-tutorial/
 /**

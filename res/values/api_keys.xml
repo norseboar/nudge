@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Google Play keys -->
     <string name="google_debug_apikey">AIzaSyBgiWDO-RIhx1B8DoIiH3zKZeA92yghEiY</string>
 	<string name="google_prod_apikey">AIzaSyDl1HgDVvYRZHy9q7ijKE5I2XbkFTBYNyo</string>
+	
+	<!-- Yelp keys -->
 </resources>
