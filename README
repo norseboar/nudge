@@ -1,1 +1,4 @@
-Initialized empty android project
+Nudge is a location-based notification system. It allows you to create a to-do list, 
+associate a generic location or item with it (e.g. buy paper towels, deposit check at chase bank, etc.), and it will send a push
+notification whenever you are nearby a location corresponds to an item on your list (any place that sells paper towels, any chase
+bank, etc).
